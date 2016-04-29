@@ -47,7 +47,7 @@ int main() {
 		////returns the number of bytes read.
 		cout << readfile.gcount() << endl;
 		cout << length << endl;
-		readfile.read(buffer, sizeof(buffer));
+	//	readfile.read(buffer, sizeof(buffer));
 
 		std::cout << "Reading " << length << " characters... ";
 		// read data as a block:
