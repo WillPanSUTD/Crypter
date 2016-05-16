@@ -112,9 +112,9 @@ std::istream& operator >> (std::istream& is, BitIo<N>& bio)
 int main()
 {
 	string
-		filename1 = "f:\\sutd\\research\\prototypingproject\\programming\\result\\cc\\key.bin",     //declare the directory of key file. Store the key we are about to use
-		filename2 = "f:\\sutd\\research\\prototypingproject\\programming\\result\\cc\\in",			//declare the directory of input message file. 
-		filename3 = "f:\\sutd\\research\\prototypingproject\\programming\\result\\cc\\out";			//declare the directory of output XOR result file.
+		filename1 = "~\key.bin",     //declare the directory of key file. Store the key we are about to use
+		filename2 = "~\in",			//declare the directory of input message file. 
+		filename3 = "~\out";			//declare the directory of output XOR result file.
 
 	BitIo<16> bio;				///the class I defined above, to make coding with bitset variable easier
 
