@@ -4,120 +4,16 @@
 #include <bitset>
 #include <assert.h>
 #include <string.h>
+#include <time.h>
+#include <list>
 using namespace std;
-
-////////////////////////It's a bitset template class I downloaded from http://codereview.stackexchange.com/questions/67012/easy-bitset-i-o, which could make coding easier I guess. 
-///////////////////////Antoher alternative is http://codereview.stackexchange.com/questions/67350/easy-bit-io-very-simple-interface-works-up-to-n-64, I didn't use, you make take a try.
-//////////////////////////If you feel hard to read this, jump to line 111. Or search "int main()".
-
-template <std::size_t N>		//////Please google template definition, which enables the possibility of a class with multiple types. Here, BitIo<8>, BitIo<16>, ... etc. 	
-class BitIo
-{
-public:							////Only functions and varibles defined as public can be called.
-
-	void push_back(const std::bitset<N>& bs)
-	{
-		std::vector<Byte> result((N + 7) >> 3);
-		for (std::size_t j = 0; j < N; ++j) {
-			result[j >> 3] |= (bs[j] << (j & 7));
-		}
-		for (const Byte& byte : result) {
-			bytes.push_back(byte);
-		}
-		num_bytes += NUM_BYTES_PER_BITSET;
-	}
-
-	std::bitset<N> pop_front()
-	{
-		std::bitset<N> result;
-		for (std::size_t j = 0; j < N; ++j) {
-			result[j] = ((bytes[(j >> 3) + offset] >> (j & 7)) & 1);
-		}
-		offset += NUM_BYTES_PER_BITSET;
-		num_bytes -= NUM_BYTES_PER_BITSET;
-		return result;
-	}
-
-	bool empty()
-	{
-		return num_bytes < NUM_BYTES_PER_BITSET;
-	}
-
-	void clear()
-	{
-		bytes.clear();
-		num_bytes = 0;
-	}
-
-	std::size_t size()
-	{
-		return num_bytes;
-	}
-
-private:
-
-	using Byte = unsigned char;
-	static constexpr std::size_t NUM_BYTES_PER_BITSET = N / 8;
-
-	template <std::size_t T>
-	friend std::ostream& operator<<(std::ostream& os, const BitIo<T>& bio);
-	template <std::size_t T>
-	friend std::istream& operator >> (std::istream& is, BitIo<T>& bio);
-
-	std::istream& read_file(std::istream& is)
-	{
-		bytes.clear();
-
-		std::streampos current_pos, file_size;
-		current_pos = is.tellg();
-		is.seekg(0, std::ios::end);
-		file_size = is.tellg() - current_pos;
-		is.seekg(current_pos, std::ios::beg);
-
-		bytes.resize(file_size);
-		is.read(reinterpret_cast<char *>(&bytes[0]), file_size);
-
-		num_bytes += file_size;
-
-		return is;
-	}
-
-	std::vector<Byte> bytes;
-	std::size_t offset = 0;
-	std::size_t num_bytes = 0;
-};
-
-template <std::size_t N>
-std::ostream& operator<<(std::ostream& os, const BitIo<N>& bio)
-{
-	for (const auto& byte : bio.bytes) {
-		os << byte;
-	}
-	return os;
-}
-
-template <std::size_t N>
-std::istream& operator >> (std::istream& is, BitIo<N>& bio)
-{
-	if (!is) {
-		is.setstate(std::ios::failbit);
-	}
-	bio.read_file(is);
-	return is;
-}
-
-
-
 
 int main()
 {
 	string
-		filename1 = "~\key.bin",     //declare the directory of key file. Store the key we are about to use
-		filename2 = "~\in",			//declare the directory of input message file. 
-		filename3 = "~\out";			//declare the directory of output XOR result file.
-
-	BitIo<16> bio;				///the class I defined above, to make coding with bitset variable easier
-
+		filename1 = "f:\\sutd\\research\\prototypingproject\\programming\\result\\cc\\key",     //declare the directory of key file. Store the key we are about to use
+		filename2 = "f:\\sutd\\research\\prototypingproject\\programming\\result\\cc\\in",			//declare the directory of input message file. 
+		filename3 = "f:\\sutd\\research\\prototypingproject\\programming\\result\\cc\\out";			//declare the directory of output XOR result file.
 
 	/////////////////////PART  ONE//////////////////////////////////////////////////////////////
 	/////////////////////Read a text file (message)/////////////////////////////////////////////
@@ -132,8 +28,12 @@ int main()
 		info.seekg(0, info.beg);////restore the pointer's position to the beginning of the file
 		message = new char[length];	///so we get the length of the message
 		int i = 0;
-		while (info.get(c))			//////get a char from info, and save it to c
+		while (info.get(c) && c != EOF)		//////get a char from info, and save it to c
 			message[i++] = c;		//////c->message
+		if (i != length)
+			length = i;			///////////double-check and update the length
+
+		cout << "the file is opened successfully, with " << length << " characters." << endl;
 	}
 	else
 	{
@@ -142,82 +42,150 @@ int main()
 	}
 	info.close();
 
-	/////////////////////////////PART TWO//////////////////////////////////////////////
-	//////////////////////////////generate the key/////////////////////////////////////////////////////
-	ofstream output(filename1, ios::trunc | ios::binary);											//declare the output file to store the key
-	int a;										//an integer to get the random number
-	int N = length;								//the size of key file
 
-	//	std::hash<std::bitset<16>> hash_fn;			//hash function for bitset, seems to generate 10 digits from a bitset<16> variable, I'm not so familiar with this. Can ignore if no need.
 
-	for (int i = 0; i < N; i++)		//generate N keys 
+	//////////////////////////////PART TWO/////////////////////////////////////////////////////////////////////
+	//////////////////////////////Read the key from the file we stored/////////////////////////////////////////
+	fstream key(filename1);			///declare an input file pointer to file key
+	bool KeyFlag = false;        ////////////determine whether key file should be appended or written
+	list<bitset<8>> BitsetList;         						/////use to save the rest contents of key file, please google list c++ for further information
+	bitset<8> xxx;					////a temporary variable
+	char xxxn;
+	char *keychar = new char[length];			//////////////////read the key char from key file
+	int keysize = 0;
+
+	if (key.is_open())
 	{
-		a = rand();					//a is from  0 to RAND_MAX, here Rand_max is 32767
-		std::bitset<16> b(a);		//transfrom a into bitset<16>;
-//		output << b << " ";			//output b to file, noted that I add a " " between two keys.
-		bio.push_back(b);			////push_back the bistet<16> b to bio vector class
+		key.seekg(0, key.end);
+		keysize = key.tellg();					////measure the length of key file
+		key.seekg(0, key.beg);
+		if (keysize > 0)						////test if key file size > 0, push all the key to the key list
+			while (key.get(c))
+			{				
+				xxx = c;
+				BitsetList.push_back(xxx);
+			}
+		key.seekg(0, key.beg);					////key.get(char) will change the position of file pointer, move it back to the begining
+		cout << "The key file is opened successfully, with " << keysize << " keys" << endl;
+		if (keysize > length)					////if the key file is larger than message, directly read keys from key file
+		{
+			cout << "Key number is larger than message number, directly read from key" << endl;
+			for (int i = 0; i < length; i++)
+			{
+				key.get(c);
+				keychar[i] = c;
+				BitsetList.pop_front();			////directly read from the list
+				KeyFlag = false;
+			}
 
-		//size_t h1 = hash_fn(b);
-		//output << h1 << " ";
+		}
+		else
+		{
+			cout << "Key number is smaller than message number, need to add more keys" << endl;
+			KeyFlag = true;
+		}
+		key.close();
 	}
-	if (output.is_open())						//test if the file is successfully opened
-		output << bio;							//save bio vector to file
 	else
-		cout << "error!" << endl;
+	{
+		cout << "key file doesn't exist, unable to open key file!" << endl;
+		KeyFlag = true;
+	}
+
+
+
+
+	/////////////////////////////PART THREE//////////////////////////////////////////////
+	//////////////////////////////generate/append the key/////////////////////////////////////////////////////
+
+	fstream output(filename1, ios::trunc | ios::out|ios::binary);	//declare the output file to store the key
+	if (KeyFlag)												////need to generate or append the key
+	{
+		cout << "key generating/appending process!" << endl;
+		cout << "original key length: " << BitsetList.size() << endl;
+
+		char a;										//an integer to get the random number
+		int N = 1000;								//the size of key file
+		srand(time(NULL));
+		for (int i = 0; i < N; i++)		//generate N keys 
+		{
+			a = rand();					//a is from  0 to RAND_MAX, here Rand_max is 32767
+			std::bitset<8> b(a);		//transfrom a into bitset<8>;
+	//		output << b << " ";			//output b to file, noted that I add a " " between two keys.
+			BitsetList.push_back(b);			////push_back the bitset<8> b to bio vector class
+		}
+		if (output.is_open())						//test if the file is successfully opened
+		{
+			cout << "message length: " << length << endl;
+			cout << "appended key length: " << BitsetList.size() << endl;
+			
+			for (int i = 0; i < length; i++)		///KeyFlag is true, keychar[i] must be empty, get length number of keys from bitset list
+			{
+				xxx = BitsetList.front();
+				BitsetList.pop_front();
+				c = static_cast<char>(xxx.to_ulong());
+				keychar[i] = c;
+			}
+			while (!BitsetList.empty()) {
+				xxx = BitsetList.front();
+				xxxn=xxx.to_ulong();
+				//output << xxx;
+				output.write(reinterpret_cast<const char*>(&xxxn), sizeof(xxxn));			/////////write the rest bitset keys to key file
+				BitsetList.pop_front();			//save the rest key to file
+			}
+
+
+		}
+		else
+			cout << "Error: Unable to update the key file!" << endl;
+
+	}
+
+	else												//no need to generate more keys, but have to save the rest keys to key file
+	{
+		cout << "Jumping part three!" << endl;
+		while (!BitsetList.empty()) {		
+			xxx = BitsetList.front();
+			xxxn = xxx.to_ulong();
+			//output << xxx;
+			output.write(reinterpret_cast<const char*>(&xxxn),sizeof(xxxn));
+			BitsetList.pop_front();			//save the rest key to file
+		}
+	}
+
 	output.close();
-
-	cout << bio.size() << endl;
-	//bio.clear();
-
-
-	////////////////////////////////PART THREE (OPTIONAL)///////////////////////////////////////////////////////////////////
-	////////////////////////////////Read the key from the file we stored/////////////////////////////////////////
-	//fstream key(filename1, ifstream::in | ifstream::binary);			///declare an input file pointer to file key
-	//BitIo<16> bio2;				
-
-	//if (key.is_open())
-	//{
-	//	key >> bio2;									/////read from key file, save in bio2 vector
-	//	while (!bio2.empty()) {
-	//		cout << bio2.pop_front() << endl;			// Prints the all the keys (16-bit bitsets) in correct order.
-	//	}
-	//}
-	//else cout << "unable to open key file!";
-	//bio2.clear();
-
-	//key.close();
-
+	BitsetList.clear();
 
 	//////////////////////////////PART FOUR//////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////XOR operation and save the file into out////////////////////////////////////////
+	//////////////////////////////XOR operation and save the file in disk////////////////////////////////////////
 	char *Encrypted_message;
 	Encrypted_message = new char[length];
 
-	bitset<16> first,result;						///////////////////////fist bitset is from key 
-			
+	bitset<8> result;						///////////////////////fist bitset is from key 
+
 	for (int i = 0; i < length; i++)
 	{
-		first = bio.pop_front();					//////////////////////Get a bitset
-		bitset<16> second(message[i]);				///////////////////////second bitset from text (message)
-	//	cout << first << " " << second <<" "<< message[i]<< endl;
+		bitset<8> first(keychar[i]);				//////////////////////Get a bitset
+		bitset<8> second(message[i]);				///////////////////////second bitset from text (message)
+		cout << first << " " << second << " " << message[i] << endl;
 		result = first ^= second;														/////////////XOR operation
-		unsigned long x=result.to_ulong();
-		Encrypted_message[i] = static_cast<char>(x);									//////transform bitset into char
-	//	cout << "XOR result in binary: "<<result<<", XOR result as text: "<< Encrypted_message[i] << endl;
-	//	cout << "haha!" << endl;
+		xxxn = result.to_ulong();
+		Encrypted_message[i] = static_cast<char>(xxxn);									//////transform bitset into char
+		cout << "XOR result in binary: " << result << ", XOR result as text: " << Encrypted_message[i] << endl;
+		//	cout << "haha!" << endl;
 	}
 
-	ofstream outfile(filename3, ios::out);
+	ofstream outfile(filename3, ios::out | ios::trunc);
 	for (int i = 0; i < length; i++)
-		outfile << Encrypted_message[i];
+		outfile << Encrypted_message[i];					///write the output file
 	outfile.close();
 
 
 
 	///////////////////////////PART FIVE////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////decryption from the Encrypted_message and the key file from PART THREE //////////////////////
-	
-	
+
+
 	///code part
 
 
