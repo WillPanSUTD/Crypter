@@ -60,10 +60,10 @@ int main()
 		keysize = key.tellg();					////measure the length of key file
 		key.seekg(0, key.beg);
 		if (keysize > 0)						////test if key file size > 0, push all the key to the key list
-			while (key.get(c))
-			{				
-				xxx = c;
-				BitsetList.push_back(xxx);
+			for (int i = 0; i < keysize; i++)
+			{
+				key.get(c);
+				BitsetList.push_back(c);
 			}
 		key.seekg(0, key.beg);					////key.get(char) will change the position of file pointer, move it back to the begining
 		cout << "The key file is opened successfully, with " << keysize << " keys" << endl;
@@ -72,8 +72,9 @@ int main()
 			cout << "Key number is larger than message number, directly read from key" << endl;
 			for (int i = 0; i < length; i++)
 			{
-				key.get(c);
-				keychar[i] = c;
+				//key.get(c);
+				xxx = BitsetList.front();
+				keychar[i] = static_cast<char>(xxx.to_ulong());
 				BitsetList.pop_front();			////directly read from the list
 				KeyFlag = false;
 			}
@@ -98,7 +99,7 @@ int main()
 	/////////////////////////////PART THREE//////////////////////////////////////////////
 	//////////////////////////////generate/append the key/////////////////////////////////////////////////////
 
-	fstream output(filename1, ios::trunc | ios::out|ios::binary);	//declare the output file to store the key
+	fstream output(filename1, ios::trunc | ios::out);	//declare the output file to store the key
 	if (KeyFlag)												////need to generate or append the key
 	{
 		cout << "key generating/appending process!" << endl;

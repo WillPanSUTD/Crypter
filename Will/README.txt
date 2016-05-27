@@ -8,11 +8,9 @@ Communicate in Whatsapp group.
 
 Cheers!
 
+latest update:
+ReadNXOR.cpp: 
 
-Contents:
-Source.cpp describe an example of read/write binary file from txt file stored in the directory. 
-
-
-Encryption.cpp is an example of XOR encryption(I downloaded from a bbs). The keys need to be typed in during running. 
-
-Change the directory and try to run it. 
+1) Make a random section of data in binary (using hashing if its large!)
+2) Take in a file and convert to binary
+3) Do XOR between file and random data to encrypt/decrypt file.
